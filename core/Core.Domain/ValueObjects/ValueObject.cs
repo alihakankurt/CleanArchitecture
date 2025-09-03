@@ -1,39 +1,56 @@
+using System.Numerics;
+
 namespace Core.Domain.ValueObjects;
 
-public abstract class ValueObject : IEquatable<ValueObject>
+/// <summary>
+/// Represents the base type of value objects.
+/// </summary>
+public abstract class ValueObject : IEquatable<ValueObject>, IEqualityOperators<ValueObject, ValueObject, bool>
 {
+    /// <summary>
+    /// Gets the values inside the object.
+    /// </summary>
+    public abstract IEnumerable<object> Values { get; }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="ValueObject"/>.
+    /// </summary>
     protected ValueObject()
     {
     }
 
-    public abstract IEnumerable<object> GetValues();
-
+    /// <inheritdoc />
     public bool Equals(ValueObject? other)
     {
-        return other is not null && other.GetValues().SequenceEqual(GetValues());
+        return other?.Values.SequenceEqual(Values) ?? false;
     }
 
+    /// <inheritdoc />
     public override bool Equals(object? obj)
     {
         return obj is ValueObject other && Equals(other);
     }
 
+    /// <inheritdoc />
     public override int GetHashCode()
     {
-        int hashCode = 0;
-        foreach (var value in GetValues())
-        {
-            hashCode = HashCode.Combine(hashCode, value);
-        }
-
-        return hashCode;
+        return Values
+            .Select(static (value) => value?.GetHashCode() ?? 0)
+            .Aggregate(static (acc, hash) => acc ^ hash);
     }
 
+    /// <inheritdoc />
     public static bool operator ==(ValueObject? left, ValueObject? right)
     {
-        return left?.Equals(right) ?? right is null;
+        if (left is null || right is null)
+        {
+            return left is null && right is null;
+        }
+
+        return left?.Equals(right) ?? false;
     }
 
+    /// <inheritdoc />
     public static bool operator !=(ValueObject? left, ValueObject? right)
     {
         return !(left == right);

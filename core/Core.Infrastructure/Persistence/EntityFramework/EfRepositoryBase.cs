@@ -1,11 +1,14 @@
 using System.Linq.Expressions;
-using Core.Application.Persistence.Repositories;
+using Core.Application.Persistence;
 using Core.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Core.Infrastructure.Persistence.EntityFramework;
 
-public abstract class EfRepositoryBase<TContext, TEntity, TId> : IRepository<TEntity, TId>, IAsyncRepository<TEntity, TId>
+/// <summary>
+/// Represents the base class implementation of <see cref="IRepository{TEntity, TId}"/> for EF Core.
+/// </summary>
+public abstract class EfRepositoryBase<TContext, TEntity, TId> : IRepository<TEntity, TId>
     where TContext : DbContext
     where TEntity : Entity<TId>
     where TId : notnull
@@ -17,114 +20,65 @@ public abstract class EfRepositoryBase<TContext, TEntity, TId> : IRepository<TEn
         Context = context;
     }
 
-    public void Create(TEntity entity)
+    public async ValueTask<TEntity?> FindByIdAsync(TId id, CancellationToken cancellationToken = default)
     {
-        Context.Add(entity);
+        return await Context.Set<TEntity>().FindAsync([id], cancellationToken);
     }
 
-    public ValueTask CreateAsync(TEntity entity)
-    {
-        Context.Add(entity);
-        return ValueTask.CompletedTask;
-    }
-
-    public void Update(TEntity entity)
-    {
-        Context.Update(entity);
-    }
-
-    public ValueTask UpdateAsync(TEntity entity)
-    {
-        Context.Update(entity);
-        return ValueTask.CompletedTask;
-    }
-
-    public void Delete(TEntity entity)
-    {
-        Context.Remove(entity);
-    }
-
-    public ValueTask DeleteAsync(TEntity entity)
-    {
-        Context.Remove(entity);
-        return ValueTask.CompletedTask;
-    }
-
-    public void DeleteById(TId id)
-    {
-        if (GetById(id) is TEntity entity)
-            Context.Remove(entity);
-    }
-
-    public async ValueTask DeleteByIdAsync(TId id, CancellationToken cancellationToken = default)
-    {
-        if (await GetByIdAsync(id, cancellationToken) is TEntity entity)
-            Context.Remove(entity);
-    }
-
-    public TEntity? Get(Expression<Func<TEntity, bool>> predicate)
-    {
-        return Context.Set<TEntity>().FirstOrDefault(predicate);
-    }
-
-    public async ValueTask<TEntity?> GetAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async ValueTask<TEntity?> FindAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
     {
         return await Context.Set<TEntity>().FirstOrDefaultAsync(predicate, cancellationToken);
     }
 
-    public TEntity? GetById(TId id)
-    {
-        return Context.Set<TEntity>().FirstOrDefault((entity) => entity.Id.Equals(id));
-    }
-
-    public async ValueTask<TEntity?> GetByIdAsync(TId id, CancellationToken cancellationToken = default)
-    {
-        return await Context.Set<TEntity>().FirstOrDefaultAsync((entity) => entity.Id.Equals(id), cancellationToken);
-    }
-
-    public List<TEntity> GetAll(Expression<Func<TEntity, bool>>? predicate = null, Expression<Func<TEntity, object>>? orderBy = default)
+    public async ValueTask<List<TEntity>> FindAllAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
         IQueryable<TEntity> query = Context.Set<TEntity>();
 
         if (predicate is not null)
             query = query.Where(predicate);
-
-        if (orderBy is not null)
-            query.OrderBy(orderBy);
-
-        return query.ToList();
-    }
-
-    public async ValueTask<List<TEntity>> GetAllAsync(Expression<Func<TEntity, bool>>? predicate = null, Expression<Func<TEntity, object>>? orderBy = default, CancellationToken cancellationToken = default)
-    {
-        IQueryable<TEntity> query = Context.Set<TEntity>();
-
-        if (predicate is not null)
-            query = query.Where(predicate);
-
-        if (orderBy is not null)
-            query.OrderBy(orderBy);
 
         return await query.ToListAsync(cancellationToken);
     }
 
-    public bool Any(Expression<Func<TEntity, bool>> predicate)
+    public async ValueTask<long> CountAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
-        return Context.Set<TEntity>().Any(predicate);
+        IQueryable<TEntity> query = Context.Set<TEntity>();
+
+        if (predicate is not null)
+            query = query.Where(predicate);
+
+        return await query.LongCountAsync(cancellationToken);
     }
 
-    public async ValueTask<bool> AnyAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken = default)
+    public async ValueTask<bool> AnyAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken cancellationToken = default)
     {
-        return await Context.Set<TEntity>().AnyAsync(predicate, cancellationToken);
+        IQueryable<TEntity> query = Context.Set<TEntity>();
+
+        if (predicate is not null)
+            query = query.Where(predicate);
+
+        return await query.AnyAsync(cancellationToken);
     }
 
-    public IQueryable<TEntity> AsQueryable()
+    public async ValueTask CreateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
-        return Context.Set<TEntity>();
+        await Context.AddAsync(entity, cancellationToken);
     }
 
-    public IQueryable<TEntity> AsQueryableAsync()
+    public ValueTask UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
-        return Context.Set<TEntity>();
+        Context.Update(entity);
+        return ValueTask.CompletedTask;
+    }
+
+    public ValueTask DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
+    {
+        Context.Remove(entity);
+        return ValueTask.CompletedTask;
+    }
+
+    public async ValueTask DeleteByIdAsync(TId id, CancellationToken cancellationToken = default)
+    {
+        await Context.Set<TEntity>().Where((entity) => entity.Id.Equals(id)).ExecuteDeleteAsync(cancellationToken);
     }
 }

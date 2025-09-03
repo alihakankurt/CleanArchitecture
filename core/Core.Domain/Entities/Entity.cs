@@ -1,40 +1,61 @@
-﻿namespace Core.Domain.Entities;
+using Core.Domain.Events;
 
-public abstract class Entity<TId> : IEquatable<Entity<TId>> where TId : notnull
+namespace Core.Domain.Entities;
+
+/// <summary>
+/// Marks a type as an entity. Use <see cref="Entity"/> or <see cref="Entity{TId}"/> instead of this.
+/// </summary>
+public interface IEntity
 {
-    public TId Id { get; protected set; }
+}
 
-    protected Entity() : this(default!)
+/// <summary>
+/// Represents the base type of weak entities.
+/// </summary>
+public abstract class Entity : IEntity
+{
+}
+
+/// <summary>
+/// Represents the base type of entities with primary key.
+/// </summary>
+/// <typeparam name="TId">The type of the primary key.</typeparam>
+public abstract class Entity<TId> : IEntity where TId : notnull
+{
+    private readonly List<IDomainEvent> _domainEvents;
+
+    /// <summary>
+    /// Gets the domain events.
+    /// </summary>
+    public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents;
+
+    /// <summary>
+    /// Gets the primary key.
+    /// </summary>
+    public TId Id { get; protected set; } = default!;
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="Entity"/>.
+    /// </summary>
+    protected Entity()
     {
+        _domainEvents = new List<IDomainEvent>();
     }
 
-    protected Entity(TId id)
+    /// <summary>
+    /// Raises a new domain event.
+    /// </summary>
+    /// <param name="domainEvent">The event to raise.</param>
+    public void RaiseEvent(IDomainEvent domainEvent)
     {
-        Id = id;
+        _domainEvents.Add(domainEvent);
     }
 
-    public bool Equals(Entity<TId>? other)
+    /// <summary>
+    /// Clears the domain events.
+    /// </summary>
+    public void ClearEvents()
     {
-        return other is not null && Id.Equals(other.Id);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return obj is Entity<TId> other && Equals(other);
-    }
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Id);
-    }
-
-    public static bool operator ==(Entity<TId>? left, Entity<TId>? right)
-    {
-        return left?.Equals(right) ?? right is null;
-    }
-
-    public static bool operator !=(Entity<TId>? left, Entity<TId>? right)
-    {
-        return !(left == right);
+        _domainEvents.Clear();
     }
 }

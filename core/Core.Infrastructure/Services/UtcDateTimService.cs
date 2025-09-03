@@ -2,7 +2,10 @@ using Core.Application.Services;
 
 namespace Core.Infrastructure.Services;
 
+/// <summary>
+/// Represents the implementation of <see cref="IDateTimeService"/> using Coordinated Universal Time.
+/// </summary>
 public sealed class UtcDateTimeService : IDateTimeService
 {
-    public DateTime Now => DateTime.UtcNow;
+    public DateTimeOffset Now => DateTimeOffset.UtcNow;
 }

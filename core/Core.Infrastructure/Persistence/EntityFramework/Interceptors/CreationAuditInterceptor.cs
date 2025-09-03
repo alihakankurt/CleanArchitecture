@@ -1,5 +1,5 @@
 using Core.Application.Services;
-using Core.Domain.Contracts;
+using Core.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
@@ -31,7 +31,7 @@ public sealed class CreationAuditInterceptor : SaveChangesInterceptor
         if (context is null)
             return;
 
-        DateTime now = _dateTimeService.Now;
+        DateTimeOffset now = _dateTimeService.Now;
         var entries = from entry in context.ChangeTracker.Entries<ICreationAuditable>()
                       where entry.State is EntityState.Added
                       select entry;

@@ -1,5 +1,5 @@
 using Core.Application.Services;
-using Core.Domain.Contracts;
+using Core.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
@@ -31,7 +31,7 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
         if (context is null)
             return;
 
-        DateTime now = _dateTimeService.Now;
+        DateTimeOffset now = _dateTimeService.Now;
         var entries = from entry in context.ChangeTracker.Entries<ISoftDeletable>()
                       where entry.State is EntityState.Deleted && !entry.Entity.IsDeleted
                       select entry;
@@ -39,7 +39,6 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
         foreach (var entry in entries)
         {
             entry.State = EntityState.Modified;
-            entry.Entity.IsDeleted = true;
             entry.Entity.DeletedAt = now;
         }
     }

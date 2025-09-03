@@ -1,27 +1,31 @@
 using System.Reflection;
 using Core.Application.BusinessRules;
-using Core.Application.Contracts;
+using Core.Application.Requests;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Core.Application;
 
 internal static class ServiceRegistrar
 {
-    internal static void RegisterMediator(IServiceCollection services, Assembly assembly, ServiceLifetime serviceLifetime)
+    internal static void RegisterMediatorServices(IServiceCollection services, ServiceLifetime lifetime, Assembly assembly)
     {
-        services.Add(ServiceDescriptor.Describe(typeof(IMediator), typeof(Mediator), serviceLifetime));
-        services.Add(ServiceDescriptor.Describe(typeof(IRequestSender), (sp) => sp.GetRequiredService<IMediator>(), serviceLifetime));
-        AddHandlers(services, assembly.DefinedTypes, serviceLifetime);
+        AddMediator(services, lifetime);
+        AddRequestHandlers(services, lifetime, assembly.DefinedTypes);
     }
 
-    internal static void RegisterBusinessRules(IServiceCollection services, Assembly assembly, ServiceLifetime serviceLifetime)
+    internal static void RegisterBusinessRules(IServiceCollection services, ServiceLifetime serviceLifetime, Assembly assembly)
     {
-        AddBusinessRules(services, assembly.DefinedTypes, serviceLifetime);
+        AddBusinessRules(services, serviceLifetime, assembly.DefinedTypes);
     }
 
-    private static void AddHandlers(IServiceCollection services, IEnumerable<TypeInfo> types, ServiceLifetime serviceLifetime)
+    private static void AddMediator(IServiceCollection services, ServiceLifetime lifetime)
     {
-        var handlerTypes = new Type[] { typeof(IRequestHandler<>), typeof(IRequestHandler<,>) };
+        services.Add(ServiceDescriptor.Describe(typeof(IMediator), typeof(Mediator), lifetime));
+    }
+
+    private static void AddRequestHandlers(IServiceCollection services, ServiceLifetime lifetime, IEnumerable<TypeInfo> types)
+    {
+        Type[] handlerTypes = [typeof(IRequestHandler<>), typeof(IRequestHandler<,>)];
 
         foreach (var type in types)
         {
@@ -30,17 +34,14 @@ internal static class ServiceRegistrar
 
             var interfaces = type.GetInterfaces().Where(static (iface) => iface.IsGenericType).ToArray();
 
-            foreach (var handlerType in handlerTypes)
-                if (interfaces.FirstOrDefault((iface) => iface.GetGenericTypeDefinition().IsAssignableTo(handlerType)) is Type serviceType)
-                    services.Add(ServiceDescriptor.Describe(serviceType, type, serviceLifetime));
+            if (interfaces.FirstOrDefault((iface) => handlerTypes.Contains(iface.GetGenericTypeDefinition())) is Type serviceType)
+                services.Add(ServiceDescriptor.Describe(serviceType, type, lifetime));
         }
     }
 
-    private static void AddBusinessRules(IServiceCollection services, IEnumerable<TypeInfo> types, ServiceLifetime serviceLifetime)
+    private static void AddBusinessRules(IServiceCollection services, ServiceLifetime lifetime, IEnumerable<TypeInfo> types)
     {
-        var businessRulesType = typeof(IBusinessRules);
-        foreach (var type in types)
-            if (type.ImplementedInterfaces.Any((iface) => iface.IsAssignableTo(businessRulesType)))
-                services.Add(ServiceDescriptor.Describe(type, type, serviceLifetime));
+        foreach (var type in types.Where((type) => type.ImplementedInterfaces.Any((iface) => iface.IsAssignableTo(typeof(IBusinessRules)))))
+            services.Add(ServiceDescriptor.Describe(type, type, lifetime));
     }
 }

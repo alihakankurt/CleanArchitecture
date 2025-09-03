@@ -2,13 +2,15 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Core.Application.Models;
 using Core.Application.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Core.Infrastructure.Services;
 
+/// <summary>
+/// Represents the implementation of <see cref="ITokenService"/> using JSON Web Tokens.
+/// </summary>
 public sealed class JwtTokenService : ITokenService
 {
     private readonly JwtTokenOptions _tokenOptions;
@@ -20,7 +22,7 @@ public sealed class JwtTokenService : ITokenService
         _dateTimeService = dateTimeService;
     }
 
-    public TokenModel GenerateAccessToken(string identity, string username, string email, IEnumerable<string>? roles = default)
+    public TokenInfo GenerateAccessToken(string identity, string username, string email, params ReadOnlySpan<string> roles)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_tokenOptions.SecretKey));
         var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha512Signature);
@@ -32,37 +34,44 @@ public sealed class JwtTokenService : ITokenService
             new Claim(ClaimTypes.Email, email),
         };
 
-        if (roles is not null)
+        foreach (var role in roles)
         {
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
+            claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        DateTime now = _dateTimeService.Now;
-        DateTime expires = now.AddMinutes(_tokenOptions.AccessTokenExpirationInMinutes);
+        DateTimeOffset createdAt = _dateTimeService.Now;
+        DateTimeOffset expiresAt = createdAt.AddMinutes(_tokenOptions.AccessTokenExpirationInMinutes);
 
         var token = new JwtSecurityToken(
             issuer: _tokenOptions.Issuer,
             audience: _tokenOptions.Audience,
             claims: claims.ToArray(),
-            notBefore: now,
-            expires: expires,
+            notBefore: createdAt.LocalDateTime,
+            expires: expiresAt.LocalDateTime,
             signingCredentials: signingCredentials
         );
 
-        return new TokenModel(new JwtSecurityTokenHandler().WriteToken(token), now, expires);
+        return new TokenInfo
+        {
+            Token = new JwtSecurityTokenHandler().WriteToken(token),
+            CreatedAt = createdAt,
+            ExpiresAt = expiresAt
+        };
     }
 
-    public TokenModel GenerateRefreshToken()
+    public TokenInfo GenerateRefreshToken()
     {
         using var rng = RandomNumberGenerator.Create();
         Span<byte> bytes = stackalloc byte[64];
         rng.GetBytes(bytes);
-        DateTime now = _dateTimeService.Now;
-        DateTime expires = now.AddMinutes(_tokenOptions.RefreshTokenExpirationInMinutes);
-        return new TokenModel(Convert.ToBase64String(bytes), now, expires);
+        DateTimeOffset createdAt = _dateTimeService.Now;
+        DateTimeOffset expiresAt = createdAt.AddMinutes(_tokenOptions.RefreshTokenExpirationInMinutes);
+        return new TokenInfo
+        {
+            Token = Convert.ToBase64String(bytes),
+            CreatedAt = createdAt,
+            ExpiresAt = expiresAt
+        };
     }
 
     public sealed class JwtTokenOptions

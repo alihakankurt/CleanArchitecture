@@ -2,7 +2,10 @@ using Core.Application.Services;
 
 namespace Core.Infrastructure.Services;
 
+/// <summary>
+/// Represents the implementation of <see cref="IDateTimeService"/> using local time.
+/// </summary>
 public sealed class LocalDateTimeService : IDateTimeService
 {
-    public DateTime Now => DateTime.Now;
+    public DateTimeOffset Now => DateTimeOffset.Now;
 }

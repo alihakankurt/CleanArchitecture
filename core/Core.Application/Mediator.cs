@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Core.Application.Contracts;
+using Core.Application.Requests;
 using Core.Application.Wrappers;
 
 namespace Core.Application;
@@ -14,7 +14,7 @@ public class Mediator : IMediator
         _serviceProvider = serviceProvider;
     }
 
-    public Task SendAsync(IRequest request, CancellationToken cancellationToken = default)
+    public ValueTask SendAsync(IRequest request, CancellationToken cancellationToken = default)
     {
         var handler = _requestHandlers.GetOrAdd(request.GetType(), static (requestType) =>
             Activator.CreateInstance(typeof(RequestHandlerWrapper<>).MakeGenericType(requestType))
@@ -23,7 +23,7 @@ public class Mediator : IMediator
         return ((IRequestHandlerWrapper)handler).HandleAsync(request, _serviceProvider, cancellationToken);
     }
 
-    public Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public ValueTask<TResponse> SendAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
         var handler = _requestHandlers.GetOrAdd(request.GetType(), static (requestType) =>
             Activator.CreateInstance(typeof(RequestHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))

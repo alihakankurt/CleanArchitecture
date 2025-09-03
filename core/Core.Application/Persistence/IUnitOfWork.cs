@@ -1,13 +1,18 @@
 namespace Core.Application.Persistence;
 
+/// <summary>
+/// Represents a transactional boundary that coordinates and commits changes across multiple repositories as a single atomic operation.
+/// </summary>
 public interface IUnitOfWork
 {
-    public void CreateTransaction();
-    public ValueTask CreateTransactionAsync(CancellationToken cancellationToken = default);
-    public void SaveChanges();
+    /// <summary>
+    /// Begins a new transaction operation.
+    /// </summary>
+    /// <returns>A new instance of <see cref="ITransaction"/>.</returns>
+    public ValueTask<ITransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Saves the changes to the database.
+    /// </summary>
     public ValueTask SaveChangesAsync(CancellationToken cancellationToken = default);
-    public void Commit();
-    public ValueTask CommitAsync(CancellationToken cancellationToken = default);
-    public void Rollback();
-    public ValueTask RollbackAsync(CancellationToken cancellationToken = default);
 }
