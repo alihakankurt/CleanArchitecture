@@ -1,5 +1,6 @@
 using System.Reflection;
 using Core.Application.BusinessRules;
+using Core.Application.Events;
 using Core.Application.Requests;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -10,7 +11,7 @@ internal static class ServiceRegistrar
     internal static void RegisterMediatorServices(IServiceCollection services, ServiceLifetime lifetime, Assembly assembly)
     {
         AddMediator(services, lifetime);
-        AddRequestHandlers(services, lifetime, assembly.DefinedTypes);
+        AddHandlers(services, lifetime, assembly.DefinedTypes);
     }
 
     internal static void RegisterBusinessRules(IServiceCollection services, ServiceLifetime serviceLifetime, Assembly assembly)
@@ -23,25 +24,41 @@ internal static class ServiceRegistrar
         services.Add(ServiceDescriptor.Describe(typeof(IMediator), typeof(Mediator), lifetime));
     }
 
-    private static void AddRequestHandlers(IServiceCollection services, ServiceLifetime lifetime, IEnumerable<TypeInfo> types)
+    private static void AddHandlers(IServiceCollection services, ServiceLifetime lifetime, IEnumerable<TypeInfo> types)
     {
-        Type[] handlerTypes = [typeof(IRequestHandler<>), typeof(IRequestHandler<,>)];
+        Type[] handlerTypes = [
+            typeof(IRequestHandler<>),
+            typeof(IRequestHandler<,>),
+            typeof(IDomainEventHandler<>),
+        ];
 
-        foreach (var type in types)
+        foreach (TypeInfo type in types)
         {
             if (type.IsGenericTypeDefinition || type.ContainsGenericParameters)
                 continue;
 
-            var interfaces = type.GetInterfaces().Where(static (iface) => iface.IsGenericType).ToArray();
+            var interfaces = type.GetInterfaces()
+                .Where(static (iface) => iface.IsGenericType)
+                .ToArray();
 
-            if (interfaces.FirstOrDefault((iface) => handlerTypes.Contains(iface.GetGenericTypeDefinition())) is Type serviceType)
+            var serviceTypes = interfaces.Where((iface) => handlerTypes.Contains(iface.GetGenericTypeDefinition()));
+            foreach (var serviceType in serviceTypes)
+            {
                 services.Add(ServiceDescriptor.Describe(serviceType, type, lifetime));
+            }
         }
     }
 
     private static void AddBusinessRules(IServiceCollection services, ServiceLifetime lifetime, IEnumerable<TypeInfo> types)
     {
-        foreach (var type in types.Where((type) => type.ImplementedInterfaces.Any((iface) => iface.IsAssignableTo(typeof(IBusinessRules)))))
-            services.Add(ServiceDescriptor.Describe(type, type, lifetime));
+        Type businessRulesType = typeof(IBusinessRules);
+
+        foreach (TypeInfo type in types)
+        {
+            if (type.ImplementedInterfaces.Any((iface) => iface.IsAssignableTo(businessRulesType)))
+            {
+                services.Add(ServiceDescriptor.Describe(type, type, lifetime));
+            }
+        }
     }
 }
