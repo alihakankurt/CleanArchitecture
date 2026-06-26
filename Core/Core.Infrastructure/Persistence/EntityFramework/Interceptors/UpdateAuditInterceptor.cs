@@ -16,14 +16,16 @@ public sealed class UpdateAuditInterceptor : SaveChangesInterceptor
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
+        InterceptionResult<int> interceptionResult = base.SavingChanges(eventData, result);
         AuditUpdate(eventData.Context);
-        return base.SavingChanges(eventData, result);
+        return interceptionResult;
     }
 
-    public override ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
+    public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
+        InterceptionResult<int> interceptionResult = await base.SavingChangesAsync(eventData, result, cancellationToken);
         AuditUpdate(eventData.Context);
-        return base.SavingChangesAsync(eventData, result, cancellationToken);
+        return interceptionResult;
     }
 
     private void AuditUpdate(DbContext? context)
