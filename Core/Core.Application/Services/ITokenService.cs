@@ -11,12 +11,12 @@ public readonly struct TokenInfo
     public readonly string Token { get; init; }
 
     /// <summary>
-    /// Gets the token creation date.
+    /// Gets the date when the token is issued.
     /// </summary>
-    public readonly DateTimeOffset CreatedAt { get; init; }
+    public readonly DateTimeOffset IssuedAt { get; init; }
 
     /// <summary>
-    /// Gets the token expiration date.
+    /// Gets the date when the token expires.
     /// </summary>
     public readonly DateTimeOffset ExpiresAt { get; init; }
 }

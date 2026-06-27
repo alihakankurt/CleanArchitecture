@@ -39,22 +39,22 @@ public sealed class JwtTokenService : ITokenService
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        DateTimeOffset createdAt = _dateTimeService.Now;
-        DateTimeOffset expiresAt = createdAt.AddMinutes(_tokenOptions.AccessTokenExpirationInMinutes);
+        DateTimeOffset issuedAt = _dateTimeService.Now;
+        DateTimeOffset expiresAt = issuedAt.AddMinutes(_tokenOptions.AccessTokenExpiration);
 
         var token = new JwtSecurityToken(
             issuer: _tokenOptions.Issuer,
             audience: _tokenOptions.Audience,
-            claims: claims.ToArray(),
-            notBefore: createdAt.LocalDateTime,
-            expires: expiresAt.LocalDateTime,
+            claims: claims,
+            notBefore: issuedAt.UtcDateTime,
+            expires: expiresAt.UtcDateTime,
             signingCredentials: signingCredentials
         );
 
         return new TokenInfo
         {
             Token = new JwtSecurityTokenHandler().WriteToken(token),
-            CreatedAt = createdAt,
+            IssuedAt = issuedAt,
             ExpiresAt = expiresAt
         };
     }
@@ -64,12 +64,14 @@ public sealed class JwtTokenService : ITokenService
         using var rng = RandomNumberGenerator.Create();
         Span<byte> bytes = stackalloc byte[64];
         rng.GetBytes(bytes);
-        DateTimeOffset createdAt = _dateTimeService.Now;
-        DateTimeOffset expiresAt = createdAt.AddMinutes(_tokenOptions.RefreshTokenExpirationInMinutes);
+
+        DateTimeOffset issuedAt = _dateTimeService.Now;
+        DateTimeOffset expiresAt = issuedAt.AddMinutes(_tokenOptions.RefreshTokenExpiration);
+
         return new TokenInfo
         {
             Token = Convert.ToBase64String(bytes),
-            CreatedAt = createdAt,
+            IssuedAt = issuedAt,
             ExpiresAt = expiresAt
         };
     }
@@ -79,7 +81,7 @@ public sealed class JwtTokenService : ITokenService
         public string Issuer { get; set; } = string.Empty;
         public string Audience { get; set; } = string.Empty;
         public string SecretKey { get; set; } = string.Empty;
-        public int AccessTokenExpirationInMinutes { get; set; }
-        public int RefreshTokenExpirationInMinutes { get; set; }
+        public double AccessTokenExpiration { get; set; }
+        public double RefreshTokenExpiration { get; set; }
     }
 }
