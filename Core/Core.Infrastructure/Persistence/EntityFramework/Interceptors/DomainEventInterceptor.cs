@@ -1,5 +1,4 @@
 using Core.Application;
-using Core.Application.Services;
 using Core.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -17,19 +16,19 @@ public sealed class DomainEventInterceptor<TId> : SaveChangesInterceptor where T
 
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
-        InterceptionResult<int> interception = base.SavingChanges(eventData, result);
+        InterceptionResult<int> interceptionResult = base.SavingChanges(eventData, result);
         AuditCreation(eventData.Context).GetAwaiter().GetResult();
-        return interception;
+        return interceptionResult;
     }
 
     public override async ValueTask<InterceptionResult<int>> SavingChangesAsync(DbContextEventData eventData, InterceptionResult<int> result, CancellationToken cancellationToken = default)
     {
         InterceptionResult<int> interceptionResult = await base.SavingChangesAsync(eventData, result, cancellationToken);
-        await AuditCreation(eventData.Context);
+        await AuditCreation(eventData.Context, cancellationToken);
         return interceptionResult;
     }
 
-    private async ValueTask AuditCreation(DbContext? context)
+    private async ValueTask AuditCreation(DbContext? context, CancellationToken cancellationToken = default)
     {
         if (context is null)
             return;
@@ -39,7 +38,7 @@ public sealed class DomainEventInterceptor<TId> : SaveChangesInterceptor where T
 
         foreach (var domainEvent in domainEvents)
         {
-            await _mediator.PublishAsync(domainEvent);
+            await _mediator.PublishAsync(domainEvent, cancellationToken);
         }
     }
 }
