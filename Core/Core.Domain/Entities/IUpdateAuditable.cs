@@ -8,5 +8,5 @@ public interface IUpdateAuditable
     /// <summary>
     /// Gets the date the entity was updated at.
     /// </summary>
-    public DateTimeOffset UpdatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; }
 }

@@ -8,5 +8,5 @@ public interface ICreationAuditable
     /// <summary>
     /// Gets the date the entity was created at.
     /// </summary>
-    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; }
 }

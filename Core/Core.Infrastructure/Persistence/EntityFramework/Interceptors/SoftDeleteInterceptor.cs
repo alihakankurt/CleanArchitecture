@@ -41,7 +41,7 @@ public sealed class SoftDeleteInterceptor : SaveChangesInterceptor
         foreach (var entry in entries)
         {
             entry.State = EntityState.Modified;
-            entry.Entity.DeletedAt = now;
+            entry.Property(static (entity) => entity.DeletedAt).CurrentValue = now;
         }
     }
 }

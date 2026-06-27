@@ -8,7 +8,7 @@ public interface ISoftDeletable
     /// <summary>
     /// Gets the date the entity was soft-deleted at.
     /// </summary>
-    public DateTimeOffset? DeletedAt { get; set; }
+    public DateTimeOffset? DeletedAt { get; }
 
     /// <summary>
     /// Gets whether the entity is soft-deleted or not.

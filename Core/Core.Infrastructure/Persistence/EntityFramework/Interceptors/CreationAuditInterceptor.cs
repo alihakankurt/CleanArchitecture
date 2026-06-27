@@ -40,7 +40,7 @@ public sealed class CreationAuditInterceptor : SaveChangesInterceptor
 
         foreach (var entry in entries)
         {
-            entry.Entity.CreatedAt = now;
+            entry.Property(static (entity) => entity.CreatedAt).CurrentValue = now;
         }
     }
 }
