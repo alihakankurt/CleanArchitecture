@@ -6,7 +6,7 @@ using Domain.Entities;
 
 namespace Application.Features.Users.Queries;
 
-public sealed record GetCurrentUserQuery(long UserId) : IRequest<GetCurrentUserResponse>;
+public sealed record GetCurrentUserQuery(Guid UserId) : IRequest<GetCurrentUserResponse>;
 
 public sealed record GetCurrentUserResponse(UserDto User);
 

@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.Configure<JwtTokenService.JwtTokenOptions>(builder.Configuration.GetSection(nameof(JwtTokenService.JwtTokenOptions)));
@@ -26,7 +27,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtTokenOptions:SecretKey"]!)),
             ValidateLifetime = true,
-            LifetimeValidator = (notBefore, expires, _, _) => notBefore <= DateTime.UtcNow && DateTime.UtcNow < expires,
+            ClockSkew = TimeSpan.Zero,
         };
     });
 
@@ -35,8 +36,8 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
 builder.Services.AddCors(
-    (options) => options.AddDefaultPolicy(
-        (policy) => policy.WithOrigins("http://localhost:3000", "https://localhost:3000")
+    static (options) => options.AddDefaultPolicy(
+        static (policy) => policy.WithOrigins("http://localhost:3000", "https://localhost:3001")
             .AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 
 var app = builder.Build();
@@ -47,7 +48,7 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
-app.UseExceptionHandler(_ => { });
+app.UseExceptionHandler(static (_) => { });
 app.UseCors();
 app.UseHttpsRedirection();
 app.UseAuthentication();

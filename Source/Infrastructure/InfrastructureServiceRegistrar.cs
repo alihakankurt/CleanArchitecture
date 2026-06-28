@@ -23,6 +23,7 @@ public static class InfrastructureServiceRegistrar
 
         services.AddScoped<SaveChangesInterceptor, CreationAuditInterceptor>();
         services.AddScoped<SaveChangesInterceptor, UpdateAuditInterceptor>();
+        services.AddScoped<SaveChangesInterceptor, DomainEventInterceptor<Guid>>();
 
         services.AddScoped<IUnitOfWork, EfUnitOfWork<EfDatabaseContext>>();
 

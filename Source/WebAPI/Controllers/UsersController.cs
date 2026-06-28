@@ -38,8 +38,7 @@ public sealed class UsersController : ApiControllerBase
     [ProducesResponseType<TokenInfo>(StatusCodes.Status200OK)]
     public async ValueTask<IActionResult> Refresh()
     {
-        var refreshToken = GetRefreshToken();
-        if (refreshToken is null)
+        if (GetRefreshToken() is not string refreshToken)
             return Unauthorized();
 
         var response = await Mediator.SendAsync(new RefreshCommand(refreshToken));
@@ -50,8 +49,7 @@ public sealed class UsersController : ApiControllerBase
     [HttpPatch("revoke")]
     public async ValueTask<IActionResult> Revoke()
     {
-        var refreshToken = GetRefreshToken();
-        if (refreshToken is null)
+        if (GetRefreshToken() is not string refreshToken)
             return Unauthorized();
 
         await Mediator.SendAsync(new RevokeCommand(refreshToken));
@@ -60,10 +58,13 @@ public sealed class UsersController : ApiControllerBase
     }
 
     [Authorize]
-    [HttpGet("currentUser")]
+    [HttpGet("current-user")]
     [ProducesResponseType<UserDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> CurrentUser()
     {
+        if (GetRefreshToken() is not string refreshToken)
+            return Unauthorized();
+
         var response = await Mediator.SendAsync(new GetCurrentUserQuery(CurrentUserId));
         return Ok(response);
     }

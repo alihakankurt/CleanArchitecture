@@ -3,6 +3,6 @@ using Domain.Entities;
 
 namespace Application.Persistence;
 
-public interface IUserRepository : IRepository<User, long>
+public interface IUserRepository : IRepository<User, Guid>
 {
 }

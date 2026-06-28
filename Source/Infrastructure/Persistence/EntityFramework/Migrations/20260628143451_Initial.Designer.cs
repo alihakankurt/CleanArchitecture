@@ -11,56 +11,47 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Persistence.EntityFramework.Migrations
 {
     [DbContext(typeof(EfDatabaseContext))]
-    [Migration("20250903143817_Initial")]
+    [Migration("20260628143451_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("Id");
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("CreatedAt");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("Email");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("FirstName");
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("TEXT")
-                        .HasColumnName("LastName");
+                        .HasColumnType("TEXT");
 
                     b.Property<byte[]>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(64)
-                        .HasColumnType("BLOB")
-                        .HasColumnName("PasswordHash");
+                        .HasColumnType("BLOB");
 
                     b.Property<byte[]>("PasswordSalt")
                         .IsRequired()
                         .HasMaxLength(128)
-                        .HasColumnType("BLOB")
-                        .HasColumnName("PasswordSalt");
+                        .HasColumnType("BLOB");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("TEXT")
-                        .HasColumnName("UpdatedAt");
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
@@ -71,23 +62,24 @@ namespace Infrastructure.Persistence.EntityFramework.Migrations
                 {
                     b.OwnsMany("Domain.Entities.RefreshToken", "RefreshTokens", b1 =>
                         {
-                            b1.Property<long>("UserId")
-                                .HasColumnType("INTEGER")
-                                .HasColumnName("UserId");
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("TEXT");
 
                             b1.Property<string>("Token")
-                                .HasColumnType("TEXT")
-                                .HasColumnName("Token");
-
-                            b1.Property<DateTimeOffset>("CreatedAt")
-                                .HasColumnType("TEXT")
-                                .HasColumnName("CreatedAt");
+                                .HasColumnType("TEXT");
 
                             b1.Property<DateTimeOffset>("ExpiresAt")
-                                .HasColumnType("TEXT")
-                                .HasColumnName("ExpiresAt");
+                                .HasColumnType("TEXT");
+
+                            b1.Property<bool>("IsRevoked")
+                                .HasColumnType("INTEGER");
+
+                            b1.Property<DateTimeOffset>("IssuedAt")
+                                .HasColumnType("TEXT");
 
                             b1.HasKey("UserId", "Token");
+
+                            b1.HasIndex("Token");
 
                             b1.ToTable("RefreshTokens", (string)null);
 

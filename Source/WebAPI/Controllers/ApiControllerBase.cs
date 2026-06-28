@@ -11,7 +11,7 @@ public abstract class ApiControllerBase : ControllerBase
     private const string RefreshTokenKey = "refreshToken";
 
     protected IMediator Mediator { get; set; }
-    protected int CurrentUserId => int.Parse(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    protected Guid CurrentUserId => Guid.Parse(HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     public ApiControllerBase(IMediator mediator)
     {

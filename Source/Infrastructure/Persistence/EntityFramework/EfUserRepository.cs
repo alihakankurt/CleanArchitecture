@@ -4,7 +4,7 @@ using Domain.Entities;
 
 namespace Infrastructure.Persistence.EntityFramework;
 
-public sealed class EfUserRepository : EfRepositoryBase<EfDatabaseContext, User, long>, IUserRepository
+public sealed class EfUserRepository : EfRepositoryBase<EfDatabaseContext, User, Guid>, IUserRepository
 {
     public EfUserRepository(EfDatabaseContext context) : base(context)
     {

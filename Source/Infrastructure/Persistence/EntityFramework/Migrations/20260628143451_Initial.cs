@@ -15,8 +15,7 @@ namespace Infrastructure.Persistence.EntityFramework.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    Id = table.Column<long>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
+                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
                     FirstName = table.Column<string>(type: "TEXT", nullable: false),
                     LastName = table.Column<string>(type: "TEXT", nullable: false),
                     Email = table.Column<string>(type: "TEXT", nullable: false),
@@ -34,10 +33,11 @@ namespace Infrastructure.Persistence.EntityFramework.Migrations
                 name: "RefreshTokens",
                 columns: table => new
                 {
-                    UserId = table.Column<long>(type: "INTEGER", nullable: false),
+                    UserId = table.Column<Guid>(type: "TEXT", nullable: false),
                     Token = table.Column<string>(type: "TEXT", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    ExpiresAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
+                    IssuedAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    ExpiresAt = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    IsRevoked = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -49,6 +49,11 @@ namespace Infrastructure.Persistence.EntityFramework.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshTokens_Token",
+                table: "RefreshTokens",
+                column: "Token");
         }
 
         /// <inheritdoc />

@@ -8,9 +8,9 @@ using Domain.Entities;
 
 namespace Application.Features.Users.Commands;
 
-public sealed record LoginCommand(UserLoginDto UserLoginDto) : IRequest<LoginResponse>;
+public readonly record struct LoginCommand(UserLoginDto UserLoginDto) : IRequest<LoginResponse>;
 
-public sealed record LoginResponse(TokenInfo AccessToken, TokenInfo RefreshToken);
+public readonly record struct LoginResponse(TokenInfo AccessToken, TokenInfo RefreshToken);
 
 internal sealed class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResponse>
 {
@@ -18,13 +18,15 @@ internal sealed class LoginCommandHandler : IRequestHandler<LoginCommand, LoginR
     private readonly IUserRepository _userRepository;
     private readonly IHashService _hashService;
     private readonly ITokenService _tokenService;
+    private readonly IDateTimeService _dateTimeService;
 
-    public LoginCommandHandler(IUnitOfWork unitOfWork, IUserRepository userRepository, IHashService hashService, ITokenService tokenService)
+    public LoginCommandHandler(IUnitOfWork unitOfWork, IUserRepository userRepository, IHashService hashService, ITokenService tokenService, IDateTimeService dateTimeService)
     {
         _unitOfWork = unitOfWork;
         _userRepository = userRepository;
         _hashService = hashService;
         _tokenService = tokenService;
+        _dateTimeService = dateTimeService;
     }
 
     public async ValueTask<LoginResponse> HandleAsync(LoginCommand command, CancellationToken cancellationToken = default)
@@ -37,14 +39,13 @@ internal sealed class LoginCommandHandler : IRequestHandler<LoginCommand, LoginR
 
         TokenInfo refreshTokenInfo = _tokenService.GenerateRefreshToken();
 
-        var refreshToken = new RefreshToken
-        {
-            Token = refreshTokenInfo.Token,
-            CreatedAt = refreshTokenInfo.CreatedAt,
-            ExpiresAt = refreshTokenInfo.ExpiresAt,
-        };
+        user.AddRefreshToken(
+            refreshTokenInfo.Token,
+            refreshTokenInfo.IssuedAt,
+            refreshTokenInfo.ExpiresAt);
+        user.RecordLogin(_dateTimeService.Now);
 
-        user.RefreshTokens.Add(refreshToken);
+        await _userRepository.UpdateAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         TokenInfo accessTokenInfo = _tokenService.GenerateAccessToken(user.Id.ToString(), user.FullName, user.Email);

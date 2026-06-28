@@ -33,13 +33,13 @@ internal sealed class RefreshCommandHandler : IRequestHandler<RefreshCommand, Re
 
         DateTimeOffset now = _dateTimeService.Now;
 
-        RefreshToken refreshToken = user.RefreshTokens.First((refreshToken) => refreshToken.Token == command.RefreshToken);
-        if (refreshToken.ExpiresAt < now)
+        RefreshToken refreshToken = user.RefreshTokens.First((rt) => rt.Token == command.RefreshToken);
+        if (!refreshToken.IsActive(now))
             throw new InvalidCredentialsException();
 
         TokenInfo accessTokenInfo = _tokenService.GenerateAccessToken(user.Id.ToString(), user.FullName, user.Email);
 
-        user.RemoveExpiredRefreshTokens(_dateTimeService.Now);
+        user.PruneRefreshTokens(_dateTimeService.Now);
 
         await _userRepository.UpdateAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

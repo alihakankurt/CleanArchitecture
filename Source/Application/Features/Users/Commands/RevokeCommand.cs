@@ -32,11 +32,11 @@ internal sealed class RevokeCommandHandler : IRequestHandler<RevokeCommand>
         DateTimeOffset now = _dateTimeService.Now;
 
         RefreshToken refreshToken = user.RefreshTokens.First((refreshToken) => refreshToken.Token == command.RefreshToken);
-        if (refreshToken.ExpiresAt < now)
+        if (!refreshToken.IsActive(now))
             throw new InvalidCredentialsException();
 
-        user.RefreshTokens.Remove(refreshToken);
-        user.RemoveExpiredRefreshTokens(_dateTimeService.Now);
+        refreshToken.Revoke();
+        user.PruneRefreshTokens(_dateTimeService.Now);
 
         await _userRepository.UpdateAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -34,28 +34,22 @@ internal sealed class RegisterCommandHandler : IRequestHandler<RegisterCommand, 
         await _usersBusinessRules.EmailCanNotBeUsedTwiceOnRegistration(command.UserRegistrationDto.Email, cancellationToken);
 
         _hashService.GeneratePasswordHash(command.UserRegistrationDto.Password, out byte[] passwordHash, out byte[] passwordSalt);
-        var user = new User
-        {
-            FirstName = command.UserRegistrationDto.FirstName,
-            LastName = command.UserRegistrationDto.LastName,
-            Email = command.UserRegistrationDto.Email,
-            PasswordHash = passwordHash,
-            PasswordSalt = passwordSalt,
-        };
+        var user = new User(
+            command.UserRegistrationDto.FirstName,
+            command.UserRegistrationDto.LastName,
+            command.UserRegistrationDto.Email,
+            passwordHash, passwordSalt);
 
         await _userRepository.CreateAsync(user, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         TokenInfo refreshTokenInfo = _tokenService.GenerateRefreshToken();
 
-        var refreshToken = new RefreshToken
-        {
-            Token = refreshTokenInfo.Token,
-            CreatedAt = refreshTokenInfo.CreatedAt,
-            ExpiresAt = refreshTokenInfo.ExpiresAt,
-        };
+        user.AddRefreshToken(
+            refreshTokenInfo.Token,
+            refreshTokenInfo.IssuedAt,
+            refreshTokenInfo.ExpiresAt);
 
-        user.RefreshTokens.Add(refreshToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         TokenInfo accessTokenInfo = _tokenService.GenerateAccessToken(user.Id.ToString(), user.FullName, user.Email);
